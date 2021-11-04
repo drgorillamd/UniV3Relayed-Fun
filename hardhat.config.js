@@ -24,11 +24,8 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
     hardhat: {
       forking: {
         url: process.env.ETH_PROV,
+        minGasPrice: 100,
       }
-    },
-    goerli: {
-      url: process.env.GOERLI_PROV,
-      accounts: [process.env.GOERLI_KEY]
     }
   }
 };

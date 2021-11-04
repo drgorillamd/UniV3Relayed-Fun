@@ -9,7 +9,7 @@ import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "./U3RGasTank.sol";
 
-interface IWETH9 {
+interface IWeth {
     function deposit() external payable;
     function transfer(address recipient, uint amount) external;
 }
@@ -176,16 +176,13 @@ contract uniV3Relayed {
             theo_adr := mload(0x0) //address = 20bytes right end of 32bytes pub key
         }
 
-        console.log(msg.sender);
-        console.log(theo_adr);
-
         return msg.sender == theo_adr;
     }
 
     function bribe(uint256 gas_init, uint256 maxFeePerGas, address payer) internal {
         uint256 gas_final = gasleft();
         uint256 delta_gas = gas_init - gas_final;
-        uint256 bribe_to_send = delta_gas*(maxFeePerGas+1);
+        uint256 bribe_to_send = (delta_gas*maxFeePerGas) + 0.01 ether;
 
         require(gasTank.balanceOf(payer) >= bribe_to_send, "U3R:0 input left");
         gasTank.use(payer, bribe_to_send);
