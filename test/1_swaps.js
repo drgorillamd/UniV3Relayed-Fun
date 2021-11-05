@@ -22,7 +22,7 @@ before(async function () {
   [owner] = await ethers.getSigners();
 
   user = ethers.Wallet.createRandom().connect(provider);
-  await owner.sendTransaction({to: user.address, value: GWEI.mul('100')});
+  await owner.sendTransaction({to: user.address, value: GWEI.mul('1')}); //1ETH for DAI approval 
 
   frontrunner = ethers.Wallet.createRandom().connect(provider);
   await owner.sendTransaction({to: frontrunner.address, value: GWEI.mul('100')});
@@ -44,7 +44,7 @@ before(async function () {
   console.log("U3R : "+U3R.address);
 });
 
-describe.only("U3R: ETH -> exact 4000 DAI @ 0.3%", function () {
+describe("U3R: ETH -> exact 4000 DAI @ 0.3%", function () {
 
   let deadline;
   let amountOut;
@@ -106,13 +106,13 @@ describe.only("U3R: ETH -> exact 4000 DAI @ 0.3%", function () {
   }),
 
   it("send ETH to gasTank", async function () { 
-    await gasTank.connect(user).deposit({value: quoteWithSlippage});
+    await gasTank.connect(owner).depositFrom(user.address, {value: quoteWithSlippage});
     expect(await gasTank.balanceOf(user.address)).to.equals(quoteWithSlippage);
   }),
 
   it("send bribe to gasTank", async function () { 
     const bribe = ethers.BigNumber.from((maxGasFee + 1) * 189000);
-    await gasTank.connect(user).deposit({value: bribe});
+    await gasTank.connect(owner).depositFrom(user.address, {value: bribe});
     expect(await gasTank.balanceOf(user.address)).to.equals(quoteWithSlippage.add(bribe));
   }),
 
@@ -121,7 +121,7 @@ describe.only("U3R: ETH -> exact 4000 DAI @ 0.3%", function () {
     expect(eth_swapped).to.be.closeTo(quoteInETH, quoteWithSlippage.sub(quoteInETH)); // = quote was correct, with margin of error = slippage
   }),
 
-  it("Actual swap->new balances ?", async function () { 
+  it("Actual swap->new balances ?", async function () {
     const eth_balance_before = await provider.getBalance(user.address);
     const frontrunner_before = await provider.getBalance(frontrunner.address);
     
@@ -219,7 +219,7 @@ describe("U3R: exact 4000 DAI -> RAI @ 0.05%", function () {
   it("send bribe to gasTank", async function () {
     const bal_before = await gasTank.balanceOf(user.address);
     const bribe = ethers.BigNumber.from((maxGasFee + 1) * 189000);
-    await gasTank.connect(user).deposit({value: bribe});
+    await gasTank.connect(owner).depositFrom(user.address, {value: bribe});
     expect(await gasTank.balanceOf(user.address)).to.equals(bal_before.add(bribe));
   }),
 

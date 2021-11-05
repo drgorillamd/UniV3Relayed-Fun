@@ -15,8 +15,8 @@ contract U3RGasTank is Ownable {
 
     constructor() {}
 
-    function deposit() external payable {
-        balanceOf[msg.sender] += msg.value;
+    function deposit(address user) external payable {
+        balanceOf[user] += msg.value;
     }
 
     function depositFrom(address _from) external payable {

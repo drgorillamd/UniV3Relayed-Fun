@@ -3,7 +3,7 @@
 
 ## Uniswap V3 gas-sponsored swaps, the fun version:
 
-mean swap gas consumption: 211k
+mean swap gas consumption: 201k
 
  alternative approach: bribing front-running actor to swap while extracting MEV (EIP1559 only).
  - Swap recipient needs to have some ETH in the gasTank contract

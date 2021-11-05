@@ -12,6 +12,11 @@ import "./U3RGasTank.sol";
 interface IWeth {
     function deposit() external payable;
     function transfer(address recipient, uint amount) external;
+    function withdraw(uint) external;
+}
+
+interface IERC20Bal {
+    function balanceOf(address) external returns (uint256);
 }
 
 /// @title Uniswap V3 Relayed swaps
@@ -100,6 +105,24 @@ contract uniV3Relayed {
             params.sqrtPriceLimitX96 == 0 ? (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1) : params.sqrtPriceLimitX96, 
             abi.encode(callbackData)
         ) returns (int256 amount0, int256 amount1) {
+            //what swap was it (exactIn or Out) ? adapt returned value accordingly
+            if(params.exactIn) amount = zeroForOne ? uint256(-amount1) : uint256(-amount0);
+            else amount = zeroForOne ? (uint256(amount0)) : (uint256(amount1));
+
+            // max slippage ?
+            if(params.exactIn) require(amount >= params.amountMinOutOrMaxIn, "U3R:max slippage");
+            else require(amount <= params.amountMinOutOrMaxIn, "U3R:max slippage");
+
+            //send what we received to the recipient
+            uint256 received = IERC20Bal(callbackData.tokenOut).balanceOf(address(this));
+            //TODO: compare gas cost of this call to recomparing what's in/out and was it exactIn/Out?
+            if(callbackData.tokenOut == WETH9_ADR) {
+                IWETH9.withdraw(received);
+                (bool success, ) = callbackData.recipient.call{value: received}(new bytes(0));
+                require(success, 'U3R:withdraw error');
+            }
+            else TransferHelper.safeTransferFrom(callbackData.tokenOut, address(this), callbackData.recipient, received); 
+
             //is there any left-overs/unswapped eth ? If yes, give them back to the gasTank (if gas-sponsored) or the sender
             if(address(this).balance > 0) {
                 if(callbackData.recipient != msg.sender) gasTank.depositFrom{value: address(this).balance}(callbackData.recipient);
@@ -108,9 +131,6 @@ contract uniV3Relayed {
                     require(success, 'U3R:withdraw error');
                 }
             }
-
-            if(params.exactIn) amount = zeroForOne ? uint256(-amount1) : uint256(-amount0);
-            else amount = zeroForOne ? (uint256(amount0)) : (uint256(amount1));
 
             bribe(gas_init, params.max_fee_per_gas, callbackData.recipient);
 
